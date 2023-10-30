@@ -17,14 +17,13 @@ class Network():
 
             self.weights = np.random.normal(0,1/3,num_kernels)
 
-
             self.bias = np.random.normal(0,1/3,(num_kernels,input_length))
             
             self.effective_kernel_length = (self.kernel.shape[2] + 
-                                                              (self.dilation - 1) * (self.kernel.shape[2] -1)) 
+                                                (self.dilation - 1) * (self.kernel.shape[2] -1)) 
             
         def sigmoid(self, input):
-            
+    
             if np.sum(input) > 100000 * input.shape[0]:
                 return 0.99999
             
@@ -36,10 +35,8 @@ class Network():
             if input.size != 2716:
                 pass
             
-            
             self.last_input = input
             
-
             pad_factor = ((self.effective_kernel_length - 1)) // 2 
 
             input = np.pad(input, ((0,0),(pad_factor,pad_factor)) )
@@ -56,28 +53,20 @@ class Network():
             for nn in range(self.num_kernels):
                 for tt in range(output.shape[1]):
                     for ii in range(self.kernel.shape[2]):
-                        
-                        
-                        
                         output[nn,tt] += np.sum(input[:,tt + self.dilation * ii] * self.kernel[nn,:,ii])
-
-
 
             z_k = self.sigmoid(output + self.bias)
                         
             self.last_z_k = z_k
-
 
             x_next = np.zeros(self.last_input.shape)
             
             for tt in range(output.shape[1]):
                 x_next[:,tt] = np.dot(z_k[:,tt] , self.weights) / self.weights.size + self.last_input[:,tt]
 
-            
             return z_k, x_next
+
         
-
-
         def backprop_sgd(self, dE_dYhat, linear_mixer , lr):
 
             dE_dH = np.zeros(self.kernel.shape)
@@ -88,7 +77,6 @@ class Network():
             for nn in range(self.num_kernels):
                 for tt in range(self.last_input.shape[1]):
 
-                    
                     dE_dH[nn,:,:] = dE_dH[nn,:,:] + (dE_dYhat[0,tt] * linear_mixer[self.layer, nn] 
                                       * self.last_z_k[nn, tt] 
                                      * (1 - self.last_z_k[nn, tt])
@@ -96,12 +84,6 @@ class Network():
 
 
             dE_dB = dE_dYhat * linear_mixer[self.layer, nn] * self.last_z_k * (1 - self.last_z_k)
-
-#             self.kernel = self.kernel - lr * dE_dH
-            
-#             self.bias = self.bias - 50 * lr * dE_dB
-                        
-#             self.weights -=  lr * dE_dW
 
             return dE_dH , dE_dB, dE_dW
 
@@ -116,13 +98,10 @@ class Network():
         
         self.linear_mixer = np.random.normal(0,1/3,(num_layers,num_kernels))
 
-        
         self.layers = []
       
         for ii in range(num_layers):
             self.layers.append( self.Conv_Layer(num_kernels,input_dim_y, kernel_length, dilation ** ii , input_length, ii) )
-
-
 
     def forward(self, y):
 
@@ -130,9 +109,7 @@ class Network():
         
         out = y
         for ii in range(self.num_layers):
-
             zk , out = self.layers[ii].forward(out)
-
             zks.append(zk)
             
         zks = np.asarray(zks)
@@ -168,17 +145,13 @@ class Network():
         dE_dWz = np.zeros(self.linear_mixer.shape)
     
         for tt in range(self.input_length):
-
             dE_dWz += grad[0,tt] * zks[:,:,tt]
             
             
         return dE_dWz
   
             
-    def backprop_sgd(self, dE_dYhats, linear_mixer, lr, bs):
-        
-        # NEED TO CHANGE SINCE BACKPROP WONT WORK UNLESS HAPPENS IMMIDIETY AFTER FORWARD PASS
-        
+    def backprop_sgd(self, dE_dYhats, linear_mixer, lr, bs):        
         
         # Want to find sum of gradients found through back prop from each data point in the batch
         # Once found want to average and update features
@@ -214,18 +187,15 @@ class Network():
             self.layers[ii].bias -= (dE_dBs[ii] / bs) * lr
             self.layers[ii].weights -= (dE_dWs[ii] / bs) * lr
 
-            
+    
     def stochastic_gradient_descent(self, data , bs, lr):
         # data - list of tuples containing input and output training data. Already shuffled when created
         # bs - batch size
-        
         
         # SPLIT DATA INTO BATCHES
         batches = []
         for ii in range(len(data) // bs):
             batches.append(data[ii * bs:(ii+1) * bs][:])
-            
-            
             
         # TRAIN NEWTORK WITH EACH BATCH
         
@@ -289,6 +259,3 @@ class Network():
 
             total_loss = 0
             total_loss_og = 0
-
-
-
